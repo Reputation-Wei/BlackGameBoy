@@ -1,16 +1,16 @@
 module gb_cpu (
-    input wire clk,           // 系统时钟
-    input wire rst_n,         // 低电平有效复位
-    input wire [7:0] data_in, // 数据输入总线
-    output reg [7:0] data_out,// 数据输出总线
-    output reg [15:0] addr,   // 地址总线
-    output reg rd_n,          // 读使能，低电平有效
-    output reg wr_n,          // 写使能，低电平有效
-    input wire int_n,         // 中断请求，低电平有效
-    output reg m1_n           // 机器周期1指示，低电平有效
+    input wire clk,           // System clock
+    input wire rst_n,         // Active-low reset
+    input wire [7:0] data_in, // Data input bus
+    output reg [7:0] data_out,// Data output bus
+    output reg [15:0] addr,   // Address bus
+    output reg rd_n,          // Read enable, active low
+    output reg wr_n,          // Write enable, active low
+    input wire int_n,         // Interrupt request, active low
+    output reg m1_n           // Machine cycle 1 indicator, active low
 );
 
-    // 内部状态定义
+    // State definitions
     localparam IDLE = 3'b000;
     localparam FETCH = 3'b001;
     localparam DECODE = 3'b010;
@@ -18,20 +18,73 @@ module gb_cpu (
     localparam MEM_ACCESS = 3'b100;
     localparam INTERRUPT = 3'b101;
 
-    // 内部信号
+    // Internal signals
     reg [2:0] state;
     reg [7:0] opcode;
     reg [15:0] pc;
     reg [15:0] sp;
-    reg [7:0] a, b, c, d, e, h, l, f;  // 8位寄存器
-    reg [7:0] ir;                      // 指令寄存器
+    reg [7:0] a, b, c, d, e, h, l, f;  // 8-bit registers
+    reg [7:0] ir;                      // Instruction register
 
-    // 时钟分频
+    // Wires for submodules
+    wire [3:0] alu_op;
+    wire [2:0] reg_src, reg_dst;
+    wire [1:0] reg_pair;
+    wire imm_en;
+    wire [1:0] mem_op, branch_type, stack_op;
+    wire [2:0] interrupt_type;
+    wire [7:0] reg_data_out;
+    wire [7:0] alu_result;
+
+    // Clock divider
     reg [1:0] clk_div;
     wire cpu_clk;
     assign cpu_clk = clk_div[1];
 
-    // 时钟分频逻辑
+    // Submodule instantiations
+
+    // Decoder
+    decoder decoder_inst (
+        .opcode(ir),
+        .alu_op(alu_op),
+        .reg_src(reg_src),
+        .reg_dst(reg_dst),
+        .reg_pair(reg_pair),
+        .imm_en(imm_en),
+        .mem_op(mem_op),
+        .branch_type(branch_type),
+        .stack_op(stack_op),
+        .interrupt_type(interrupt_type)
+    );
+
+    // Registers
+    registers regs (
+        .clk(clk),
+        .rst_n(rst_n),
+        .reg_addr(reg_src),
+        .data_in(data_out),
+        .write_en(wr_n == 1'b0),
+        .data_out(reg_data_out),
+        .reg_pair(reg_pair),
+        .pair_data_in(16'b0),
+        .pair_write_en(1'b0),
+        .pair_data_out()
+    );
+
+    // ALU
+    alu alu_inst (
+        .a(reg_data_out),
+        .b(data_in), // For demonstration, use data_in as operand B
+        .op(alu_op),
+        .carry_in(1'b0),
+        .result(alu_result),
+        .carry_out(),
+        .half_carry_out(),
+        .zero_out(),
+        .subtract_out()
+    );
+
+    // Clock divider logic
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n)
             clk_div <= 2'b00;
@@ -39,7 +92,7 @@ module gb_cpu (
             clk_div <= clk_div + 1'b1;
     end
 
-    // 主状态机
+    // Main state machine
     always @(posedge cpu_clk or negedge rst_n) begin
         if (!rst_n) begin
             state <= IDLE;
@@ -72,22 +125,24 @@ module gb_cpu (
                 end
 
                 DECODE: begin
-                    // 指令解码逻辑将在这里实现
+                    // Use decoder to get control signals
                     state <= EXECUTE;
                 end
 
                 EXECUTE: begin
-                    // 指令执行逻辑将在这里实现
+                    // Example: perform ALU operation and write back
+                    data_out <= alu_result;
+                    // More logic can be added here for memory, branch, etc.
                     state <= FETCH;
                 end
 
                 MEM_ACCESS: begin
-                    // 内存访问逻辑将在这里实现
+                    // Memory access logic can be added here
                     state <= FETCH;
                 end
 
                 INTERRUPT: begin
-                    // 中断处理逻辑将在这里实现
+                    // Interrupt handling logic can be added here
                     state <= FETCH;
                 end
 
@@ -96,13 +151,11 @@ module gb_cpu (
         end
     end
 
-    // 断言
-    // 确保PC不会超出地址空间
-    assert property (@(posedge cpu_clk) pc <= 16'hFFFF)
-    else $error("PC超出地址空间范围");
+    // Assertions (optional, for simulation)
+    // assert property (@(posedge cpu_clk) pc <= 16'hFFFF)
+    // else $error("PC out of address space");
 
-    // 确保SP不会超出地址空间
-    assert property (@(posedge cpu_clk) sp <= 16'hFFFF)
-    else $error("SP超出地址空间范围");
+    // assert property (@(posedge cpu_clk) sp <= 16'hFFFF)
+    // else $error("SP out of address space");
 
 endmodule 
