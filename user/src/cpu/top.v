@@ -21,6 +21,7 @@ module top (
     wire [1:0] mem_op, branch_type, stack_op;
     wire [2:0] interrupt_type;
     wire cpu_clk;
+    
     //clock divid
     clk_div clk_div_inst(
         .clk(clk),
