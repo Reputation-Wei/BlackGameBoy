@@ -1,2 +1,5 @@
 blackboy/
 prj/
+gbcpuGemini.v
+*.vcd
+*.view

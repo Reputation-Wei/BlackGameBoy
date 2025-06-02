@@ -36,6 +36,9 @@ module gb_cpu (
     wire [7:0] reg_data_out;
     wire [7:0] alu_result;
 
+    // ALU flag wires
+    wire alu_Z, alu_N, alu_H, alu_C;
+
     // Clock divider
     reg [1:0] clk_div;
     wire cpu_clk;
@@ -73,15 +76,15 @@ module gb_cpu (
 
     // ALU
     alu alu_inst (
-        .a(reg_data_out),
-        .b(data_in), // For demonstration, use data_in as operand B
+        .a(a),                // Use register A as operand A
+        .b(reg_data_out),     // Use register file output as operand B
         .op(alu_op),
-        .carry_in(1'b0),
+        .carry_in(f[4]),      // Carry flag from F register
         .result(alu_result),
-        .carry_out(),
-        .half_carry_out(),
-        .zero_out(),
-        .subtract_out()
+        .Z_flag(alu_Z),
+        .N_flag(alu_N),
+        .H_flag(alu_H),
+        .C_flag(alu_C)
     );
 
     // Clock divider logic
@@ -131,8 +134,11 @@ module gb_cpu (
 
                 EXECUTE: begin
                     // Example: perform ALU operation and write back
+                    // Only for arithmetic/logic instructions, as an example
+                    // You should expand this for all instructions as needed
+                    a <= alu_result; // Write ALU result to register A
+                    f <= {alu_Z, alu_N, alu_H, alu_C, 4'b0000}; // Update F register
                     data_out <= alu_result;
-                    // More logic can be added here for memory, branch, etc.
                     state <= FETCH;
                 end
 
@@ -158,4 +164,4 @@ module gb_cpu (
     // assert property (@(posedge cpu_clk) sp <= 16'hFFFF)
     // else $error("SP out of address space");
 
-endmodule 
+endmodule

@@ -17,14 +17,14 @@ module registers (
     // 8位寄存器读写
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
-            regs[0] <= 8'h00;  // A
-            regs[1] <= 8'h00;  // B
-            regs[2] <= 8'h00;  // C
-            regs[3] <= 8'h00;  // D
-            regs[4] <= 8'h00;  // E
-            regs[5] <= 8'h00;  // H
-            regs[6] <= 8'h00;  // L
-            regs[7] <= 8'h00;  // F
+            regs[0] <= 8'h00;  // A 111 ?????
+            regs[1] <= 8'h00;  // B 000
+            regs[2] <= 8'h00;  // C 001
+            regs[3] <= 8'h00;  // D 010
+            regs[4] <= 8'h00;  // E 011
+            regs[5] <= 8'h00;  // H 100
+            regs[6] <= 8'h00;  // L 101
+            regs[7] <= 8'h00;  // F 110 ???
         end else if (write_en) begin
             regs[reg_addr] <= data_in;
         end
